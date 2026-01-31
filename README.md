@@ -12,6 +12,7 @@ $ docker compose up
 
 To choose a Rule you have to fill the `Type` field with one of the following:
 
+- 'Add'             : to Add a header without replacing existing values (useful for Set-Cookie)
 - 'Del'             : to Delete a header
 - 'Join'            : to Join values on a header
 - 'Rename'          : to rename a header
@@ -25,6 +26,58 @@ response by using the `SetOnResponse` configuration.
 If `SetOnResponse` is set to `true`, the header will be changed on the response.
 Otherwise, it will be changed on the request.
 Its default value is `false`.
+
+### Add
+
+An Add rule will add a header value without replacing existing values. This is particularly useful for headers like `Set-Cookie` where you need multiple instances of the same header name.
+
+An Add rule needs 2 arguments:
+
+- `Header`, the header you want to add
+- `Value`, the value to add
+
+```yaml
+# Example Add
+- Rule:
+      Name: 'Add Set-Cookie'
+      Header: 'Set-Cookie'
+      Value: 'session=abc123; Path=/; HttpOnly'
+      Type: 'Add'
+      SetOnResponse: true
+```
+
+```yaml
+# If you already have:
+Set-Cookie: user=john; Path=/
+
+# After applying the rule, you'll have:
+Set-Cookie: user=john; Path=/
+Set-Cookie: session=abc123; Path=/; HttpOnly
+```
+
+You can use multiple Add rules to add several headers with the same name:
+
+```yaml
+# Example multiple Add rules
+- Rule:
+      Name: 'Add first cookie'
+      Header: 'Set-Cookie'
+      Value: 'session=abc123; Path=/; HttpOnly'
+      Type: 'Add'
+      SetOnResponse: true
+- Rule:
+      Name: 'Add second cookie'
+      Header: 'Set-Cookie'
+      Value: 'tracking=xyz; Path=/; Secure'
+      Type: 'Add'
+      SetOnResponse: true
+```
+
+```yaml
+# Result:
+Set-Cookie: session=abc123; Path=/; HttpOnly
+Set-Cookie: tracking=xyz; Path=/; Secure
+```
 
 ### Rename
 
@@ -91,7 +144,9 @@ Cache-Control: Foo
 
 ### Delete
 
-A rule Delete need one arguments
+A Delete rule will remove **all instances** of the specified header. If you have multiple headers with the same name (e.g., multiple `Set-Cookie` headers), they will all be deleted.
+
+A rule Delete need one argument:
 
 - `Header`, the header you want to delete
 
@@ -101,6 +156,15 @@ A rule Delete need one arguments
       Name: 'Delete Cache-Control'
       Header: 'Cache-Control'
       Type: 'Del'
+```
+
+```yaml
+# If you have multiple Set-Cookie headers:
+Set-Cookie: session=abc; Path=/
+Set-Cookie: user=john; Path=/
+Set-Cookie: tracking=xyz; Path=/
+
+# After applying a Delete rule, ALL will be removed
 ```
 
 

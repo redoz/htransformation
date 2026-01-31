@@ -7,73 +7,79 @@ http:
         htransformation:
           Rules:
             - Rule:
-              Name: 'Header transformation'
-              Header: 'X-Traefik-*'
-              Value: 'X-custom'
-              Type: 'Rename'
+              Name: "Add Set-Cookie header"
+              Header: "Set-Cookie"
+              Value: "session=abc123; Path=/; HttpOnly; Secure"
+              Type: "Add"
+              SetOnResponse: true
             - Rule:
-              Name: 'Header addition'
-              Header: 'X-Custom'
-              Value: 'True'
-              Type: 'Set'
+              Name: "Header transformation"
+              Header: "X-Traefik-*"
+              Value: "X-custom"
+              Type: "Rename"
             - Rule:
-              Name: 'Header addition'
-              Header: 'X-Custom-2'
-              Value: 'True'
-              Type: 'Set'
+              Name: "Header addition"
+              Header: "X-Custom"
+              Value: "True"
+              Type: "Set"
             - Rule:
-              Name: 'Header deletion'
-              Header: 'X-forward'
-              Type: 'Del'
+              Name: "Header addition"
+              Header: "X-Custom-2"
+              Value: "True"
+              Type: "Set"
             - Rule:
-              Name: 'Header join'
-              Header: 'X-Custom-2'
-              Sep: ','
+              Name: "Header deletion"
+              Header: "X-forward"
+              Type: "Del"
+            - Rule:
+              Name: "Header join"
+              Header: "X-Custom-2"
+              Sep: ","
               Values:
-                - 'False'
-                - 'Idk'
-              Type: 'Join'
+                - "False"
+                - "Idk"
+              Type: "Join"
             - Rule:
-              Name: 'Header join'
-              Header: 'Cache-Control'
-              Sep: ','
+              Name: "Header join"
+              Header: "Cache-Control"
+              Sep: ","
               Values:
-                - 'Foo'
-                - 'Bar'
-              Type: 'Join'
+                - "Foo"
+                - "Bar"
+              Type: "Join"
             - Rule:
-              Name: 'Header transformation to another header value'
-              Header: 'X-Traefik-*'
-              Value: '^X-custom'
+              Name: "Header transformation to another header value"
+              Header: "X-Traefik-*"
+              Value: "^X-custom"
               HeaderPrefix: "^"
-              Type: 'Rename'
+              Type: "Rename"
             - Rule:
-              Name: 'Header addition'
-              Header: 'X-Custom'
-              Value: '^X-Source'
+              Name: "Header addition"
+              Header: "X-Custom"
+              Value: "^X-Source"
               HeaderPrefix: "^"
-              Type: 'Set'
+              Type: "Set"
             - Rule:
-              Name: 'Header addition'
-              Header: 'X-Custom-2'
-              Value: '^X-Source'
+              Name: "Header addition"
+              Header: "X-Custom-2"
+              Value: "^X-Source"
               HeaderPrefix: "^"
-              Type: 'Set'
+              Type: "Set"
             - Rule:
-              Name: 'Header join'
-              Header: 'X-Custom-2'
-              Sep: ','
-              HeaderPrefix: "^"
-              Values:
-                - '^X-Source-1'
-                - 'Foo'
-              Type: 'Join'
-            - Rule:
-              Name: 'Header join'
-              Header: 'X-Forwarded-For'
-              Sep: ','
+              Name: "Header join"
+              Header: "X-Custom-2"
+              Sep: ","
               HeaderPrefix: "^"
               Values:
-                - '^CF-Connecting-IP'
-                - '192.168.0.1'
-              Type: 'Join'
+                - "^X-Source-1"
+                - "Foo"
+              Type: "Join"
+            - Rule:
+              Name: "Header join"
+              Header: "X-Forwarded-For"
+              Sep: ","
+              HeaderPrefix: "^"
+              Values:
+                - "^CF-Connecting-IP"
+                - "192.168.0.1"
+              Type: "Join"

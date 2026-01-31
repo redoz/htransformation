@@ -10,6 +10,8 @@ import (
 type RuleType string
 
 const (
+	// Add will add a header value without replacing existing ones (useful for Set-Cookie).
+	Add RuleType = "Add"
 	// Set will set the value of a header.
 	Set RuleType = "Set"
 	// Join will concatenate the values of headers.

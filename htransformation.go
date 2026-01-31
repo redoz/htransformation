@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/tomMoulard/htransformation/pkg/handler/add"
 	"github.com/tomMoulard/htransformation/pkg/handler/deleter"
 	"github.com/tomMoulard/htransformation/pkg/handler/join"
 	"github.com/tomMoulard/htransformation/pkg/handler/rename"
@@ -38,6 +39,7 @@ func CreateConfig() *Config {
 // New instantiates and returns the required components used to handle an HTTP request.
 func New(_ context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
 	handlerBuilder := map[types.RuleType]func(types.Rule) (types.Handler, error){
+		types.Add:              add.New,
 		types.Delete:           deleter.New,
 		types.Join:             join.New,
 		types.Rename:           rename.New,

@@ -64,6 +64,12 @@ func TestValidation(t *testing.T) {
 			config: &plug.Config{
 				Rules: []types.Rule{
 					{
+						Name:   "add rule",
+						Header: "not-empty",
+						Value:  "not-empty",
+						Type:   types.Add,
+					},
+					{
 						Name:   "delete rule",
 						Header: "not-empty",
 						Type:   types.Delete,
@@ -186,6 +192,110 @@ func TestHeaderRules(t *testing.T) {
 				assert.Equal(t, http.StatusInternalServerError, statusCode)
 			} else {
 				assert.Equal(t, http.StatusOK, statusCode)
+			}
+		})
+	}
+}
+
+func TestAddMultipleHeaders(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name            string
+		rules           []types.Rule
+		initialHeaders  map[string][]string
+		expectedHeaders map[string][]string
+	}{
+		{
+			name: "add multiple Set-Cookie headers",
+			rules: []types.Rule{
+				{
+					Name:          "add first cookie",
+					Header:        "Set-Cookie",
+					Value:         "session=abc123; Path=/; HttpOnly",
+					Type:          types.Add,
+					SetOnResponse: true,
+				},
+				{
+					Name:          "add second cookie",
+					Header:        "Set-Cookie",
+					Value:         "user=john; Path=/; Secure",
+					Type:          types.Add,
+					SetOnResponse: true,
+				},
+			},
+			initialHeaders: map[string][]string{
+				"Set-Cookie": {"tracking=xyz; Path=/"},
+			},
+			expectedHeaders: map[string][]string{
+				"Set-Cookie": {
+					"tracking=xyz; Path=/",
+					"session=abc123; Path=/; HttpOnly",
+					"user=john; Path=/; Secure",
+				},
+			},
+		},
+		{
+			name: "add multiple custom headers on request",
+			rules: []types.Rule{
+				{
+					Name:   "add first header",
+					Header: "X-Custom",
+					Value:  "Value1",
+					Type:   types.Add,
+				},
+				{
+					Name:   "add second header",
+					Header: "X-Custom",
+					Value:  "Value2",
+					Type:   types.Add,
+				},
+			},
+			initialHeaders: map[string][]string{},
+			expectedHeaders: map[string][]string{
+				"X-Custom": {"Value1", "Value2"},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			cfg := plug.CreateConfig()
+			cfg.Rules = test.rules
+
+			next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				// Add initial response headers
+				for headerName, headerValues := range test.initialHeaders {
+					for _, headerValue := range headerValues {
+						rw.Header().Add(headerName, headerValue)
+					}
+				}
+				rw.WriteHeader(http.StatusOK)
+			})
+
+			handler, err := plug.New(t.Context(), next, cfg, "demo-plugin")
+			require.NoError(t, err)
+
+			recorder := httptest.NewRecorder()
+
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://localhost", nil)
+			require.NoError(t, err)
+
+			handler.ServeHTTP(recorder, req)
+			resp := recorder.Result()
+			statusCode := resp.StatusCode
+			require.NoError(t, resp.Body.Close())
+
+			assert.Equal(t, http.StatusOK, statusCode)
+
+			for headerName, expectedValues := range test.expectedHeaders {
+				actualValues := resp.Header.Values(headerName)
+				assert.Equal(t, len(expectedValues), len(actualValues))
+				for i, expectedValue := range expectedValues {
+					assert.Equal(t, expectedValue, actualValues[i])
+				}
 			}
 		})
 	}

@@ -55,6 +55,20 @@ func TestDeleteHandler(t *testing.T) {
 			},
 			expectedHost: "",
 		},
+		{
+			name: "Remove all headers with same name",
+			rule: types.Rule{
+				Header: "X-Multiple",
+			},
+			requestHeaders: map[string]string{
+				"Foo":        "Bar",
+				"X-Multiple": "Value1",
+			},
+			expectedHeaders: map[string]string{
+				"Foo": "Bar",
+			},
+			expectedHost: "example.com",
+		},
 	}
 
 	for _, test := range tests {
@@ -68,6 +82,12 @@ func TestDeleteHandler(t *testing.T) {
 				req.Header.Add(hName, hVal)
 			}
 
+			// For the "Remove all headers with same name" test, add multiple values
+			if test.name == "Remove all headers with same name" {
+				req.Header.Add("X-Multiple", "Value2")
+				req.Header.Add("X-Multiple", "Value3")
+			}
+
 			deleteHandler, err := deleter.New(test.rule)
 			require.NoError(t, err)
 
@@ -75,6 +95,12 @@ func TestDeleteHandler(t *testing.T) {
 
 			for hName, hVal := range test.expectedHeaders {
 				assert.Equal(t, hVal, req.Header.Get(hName))
+			}
+
+			// For the "Remove all headers with same name" test, verify header is completely gone
+			if test.name == "Remove all headers with same name" {
+				assert.Equal(t, "", req.Header.Get("X-Multiple"))
+				assert.Equal(t, 0, len(req.Header.Values("X-Multiple")))
 			}
 
 			assert.Equal(t, test.expectedHost, req.Host)
@@ -119,6 +145,19 @@ func TestDeleteHandlerOnResponse(t *testing.T) {
 				"Foo": "Bar",
 			},
 		},
+		{
+			name: "Remove all Set-Cookie headers on response",
+			rule: types.Rule{
+				Header:        "Set-Cookie",
+				SetOnResponse: true,
+			},
+			requestHeaders: map[string]string{
+				"Foo": "Bar",
+			},
+			want: map[string]string{
+				"Foo": "Bar",
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -131,6 +170,13 @@ func TestDeleteHandlerOnResponse(t *testing.T) {
 				rw.Header().Add(hName, hVal)
 			}
 
+			// For the "Remove all Set-Cookie headers on response" test, add multiple cookies
+			if test.name == "Remove all Set-Cookie headers on response" {
+				rw.Header().Add("Set-Cookie", "session=abc; Path=/")
+				rw.Header().Add("Set-Cookie", "user=john; Path=/")
+				rw.Header().Add("Set-Cookie", "tracking=xyz; Path=/")
+			}
+
 			deleteHandler, err := deleter.New(test.rule)
 			require.NoError(t, err)
 
@@ -138,6 +184,12 @@ func TestDeleteHandlerOnResponse(t *testing.T) {
 
 			for hName, hVal := range test.want {
 				assert.Equal(t, hVal, rw.Header().Get(hName))
+			}
+
+			// For the "Remove all Set-Cookie headers on response" test, verify all cookies are gone
+			if test.name == "Remove all Set-Cookie headers on response" {
+				assert.Equal(t, "", rw.Header().Get("Set-Cookie"))
+				assert.Equal(t, 0, len(rw.Header().Values("Set-Cookie")))
 			}
 		})
 	}
